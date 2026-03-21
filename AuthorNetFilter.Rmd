@@ -1,0 +1,333 @@
+---
+title: "AuthorNet2"
+output: html_document
+date: "2026-03-21"
+---
+
+```{r}
+# ================================
+# COAUTHORSHIP NETWORK PIPELINE USING OPENALEX AUTHOR IDs
+# ================================
+
+# Packages
+# install.packages(c("httr","jsonlite","dplyr"))
+library(httr)
+library(jsonlite)
+library(dplyr)
+
+# -------------------------------
+# STEP 0: Read grantee text file
+# -------------------------------
+text <- readLines("jus2026adult.txt", warn = FALSE)
+
+# -------------------------------
+# STEP 1: Extract grantee names
+# -------------------------------
+pattern <- "\\b[A-ZÅÄÖ][a-zåäöA-ZÅÄÖ\\-]+\\s+[A-ZÅÄÖ][a-zåäöA-ZÅÄÖ\\-]+"
+matches <- gregexpr(pattern, text, perl = TRUE)
+names_raw <- regmatches(text, matches)[[1]]
+
+author_names <- unique(names_raw)
+author_names <- author_names[!grepl("Apurahansaaja|Stipendiat|Tutkimuslaitos|Forskningsinstitut|Määrä|Belopp|Vuotta|År", author_names)]
+author_names <- author_names[sapply(strsplit(author_names, " "), length) == 2]
+
+# -------------------------------
+# STEP 2: Search OpenAlex author IDs
+# -------------------------------
+search_author <- function(name) {
+  url <- paste0("https://api.openalex.org/authors?search=", URLencode(name))
+  res <- GET(url)
+  data <- fromJSON(content(res, "text", encoding="UTF-8"))
+  
+  if(length(data$results) == 0) return(data.frame(id=NA, display_name=NA, works_count=NA))
+  
+  if(is.data.frame(data$results)) {
+    return(data$results[, c("id","display_name","works_count")])
+  }
+  
+  df <- do.call(rbind, lapply(data$results, function(x) {
+    data.frame(
+      id = x$id,
+      display_name = x$display_name,
+      works_count = x$works_count,
+      stringsAsFactors = FALSE
+    )
+  }))
+  return(df)
+}
+
+# Resolve IDs for all grantees
+author_ids <- c()
+author_id_map <- data.frame(id=character(), name=character(), stringsAsFactors = FALSE)
+```
+
+
+```{r}
+for(name in author_names){
+  cat("\nSearching for:", name, "\n")
+  res <- search_author(name)
+  
+  if(all(is.na(res$id))) next
+  
+  # Pick first result automatically
+  author_ids <- c(author_ids, res$id[1])
+  author_id_map <- rbind(author_id_map, data.frame(id=res$id[1], name=name, stringsAsFactors = FALSE))
+}
+
+# -------------------------------
+# STEP 3: Function to get all papers for a given author ID
+# -------------------------------
+get_all_papers <- function(author_id){
+  papers <- list()
+  cursor <- "*"
+  
+  repeat {
+    url <- paste0("https://api.openalex.org/works?filter=author.id:", author_id,
+                  "&per-page=200&cursor=", cursor)
+    res <- GET(url)
+    data <- fromJSON(content(res, "text", encoding="UTF-8"), simplifyVector = FALSE)
+    
+    papers <- append(papers, data$results)
+    
+    if(is.null(data$meta$next_cursor)) break
+    cursor <- data$meta$next_cursor
+  }
+  papers
+}
+
+# -------------------------------
+# STEP 4: Get all papers for all grantees
+# -------------------------------
+all_papers <- list()
+for(aid in author_ids){
+  cat("\nFetching papers for:", aid, "\n")
+  papers <- get_all_papers(aid)
+  all_papers <- append(all_papers, papers)
+}
+
+# -------------------------------
+# STEP 5: Extract coauthor IDs from each paper
+# -------------------------------
+author_lists_ids <- lapply(all_papers, function(p){
+  if(!is.list(p) || is.null(p$authorships)) return(NULL)
+  
+  ids <- sapply(p$authorships, function(a){
+    if(!is.null(a$author$id)) a$author$id else NA
+  })
+  ids <- na.omit(ids)
+  
+  # Keep only coauthors who are in our grantee list
+  ids <- ids[ids %in% author_ids]
+  
+  if(length(ids) < 2) return(NULL)
+  ids
+})
+
+author_lists_ids <- author_lists_ids[!sapply(author_lists_ids, is.null)]
+
+# -------------------------------
+# STEP 6: Build pairwise edges (IDs)
+# -------------------------------
+edges <- do.call(rbind, lapply(author_lists_ids, function(ids){
+  if(length(ids) < 2) return(NULL)
+  t(combn(ids,2))
+}))
+
+edges_df <- as.data.frame(edges)
+colnames(edges_df) <- c("author1_id","author2_id")
+
+# -------------------------------
+# STEP 7: Map IDs back to names
+# -------------------------------
+edges_df$author1 <- author_id_map$name[match(edges_df$author1_id, author_id_map$id)]
+edges_df$author2 <- author_id_map$name[match(edges_df$author2_id, author_id_map$id)]
+
+# Optional: count multiple coauthorships
+edges_weighted <- edges_df %>%
+  group_by(author1, author2) %>%
+  summarise(weight=n(), .groups="drop")
+
+# -------------------------------
+# STEP 8: Preview edges
+# -------------------------------
+print(edges_weighted)
+```
+
+
+
+```{r}
+# ================================
+# 📦 Install & load packages
+# ================================
+#install.packages(c("igraph", "ggraph", "tidygraph", "dplyr", "ggplot2"))
+
+library(igraph)
+library(ggraph)
+library(tidygraph)
+library(dplyr)
+library(ggplot2)
+
+# ================================
+# 📥 INPUT: your edge list
+# ================================
+# edges_weighted must have:
+# author1 | author2 | weight
+
+# Example (remove if you already have data):
+# edges_weighted <- data.frame(
+#   author1 = c("A","A","B","C"),
+#   author2 = c("B","C","C","D"),
+#   weight = c(3,2,1,4)
+# )
+
+# ================================
+# 🧠 Build graph
+# ================================
+g <- graph_from_data_frame(edges_weighted, directed = FALSE)
+
+# ================================
+# 📊 Centrality measures
+# ================================
+V(g)$degree <- degree(g)
+V(g)$betweenness <- betweenness(g, normalized = TRUE)
+V(g)$closeness <- closeness(g, normalized = TRUE)
+V(g)$eigen <- eigen_centrality(g)$vector
+
+# ================================
+# 🧩 Community detection
+# ================================
+communities <- cluster_louvain(g)
+V(g)$community <- membership(communities)
+
+# ================================
+# 🧹 Optional: filter low-degree nodes
+# ================================
+g <- delete_vertices(g, degree(g) < 2)
+
+# ================================
+# 🔄 Convert for ggraph
+# ================================
+tg <- as_tbl_graph(g)
+
+# ================================
+# 🎨 Visualization
+# ================================
+gg <- ggraph(tg, layout = "fr") +
+  geom_edge_link(aes(width = weight), alpha = 0.3) +
+  geom_node_point(aes(size = degree, color = as.factor(community))) +
+  geom_node_text(aes(label = name), repel = TRUE, size = 3) +
+  theme_void()
+gg %>% plotly::ggplotly()
+
+# ================================
+# 🔍 Top central authors
+# ================================
+cat("\nTop Degree (most collaborators):\n")
+print(sort(V(g)$degree, decreasing = TRUE)[1:10])
+
+cat("\nTop Betweenness (key connectors):\n")
+print(sort(V(g)$betweenness, decreasing = TRUE)[1:10])
+
+cat("\nTop Closeness (most reachable):\n")
+print(sort(V(g)$closeness, decreasing = TRUE)[1:10])
+
+cat("\nTop Eigenvector (most influential):\n")
+print(sort(V(g)$eigen, decreasing = TRUE)[1:10])
+
+# ================================
+# 💾 Optional: export for Gephi
+# ================================
+write_graph(g, file = "coauthorship_network.gml", format = "gml")
+```
+
+```{r}
+netSummary <- data.frame(
+  author = V(g)$name,
+  degree = degree(g),
+  wdegree = strength(g, mode="all", weights=E(g)$weight),
+  betweenness = betweenness(g, normalized = TRUE),
+  #closeness = closeness(g, normalized = TRUE),
+  eigenvector = eigen_centrality(g)$vector,
+  community = V(g)$community
+)
+
+
+# Simplify the graph: combine multiple edges
+g_simple <- simplify(g,
+                     remove.multiple = TRUE,    # combine multiple edges
+                     edge.attr.comb = list(weight = "sum"))  # sum the weights
+# -------------------------------
+# Add all neighbors ordered by edge weight
+# -------------------------------
+primary_neighbor_MaxW <- sapply(V(g), function(v) {
+  # Get neighbors of v
+  neigh <- neighbors(g, v)
+  if(length(neigh) == 0) return(NA)
+  
+  # Get edge weights between v and each neighbor
+  ew <- sapply(neigh, function(u) {
+    E(g)[get.edge.ids(g, c(v,u))]$weight
+  })
+  
+  # Pick neighbor with maximum weight
+  neigh_name <- names(neigh)
+  neigh_name[which.max(ew)]
+})
+
+# Add to your summary dataframe
+netSummary$primary_neighbor_MaxW <- primary_neighbor_MaxW 
+
+primary_neighbors_all <- sapply(V(g_simple), function(v) {
+  neigh <- neighbors(g_simple, v)
+  if(length(neigh) == 0) return(NA)
+  
+  # Edge weights
+  ew <- sapply(neigh, function(u) {
+    E(g_simple)[get.edge.ids(g_simple, c(v,u))]$weight
+  })
+  
+  neigh_ordered <- names(neigh)[order(ew, decreasing = TRUE)]
+  paste(neigh_ordered, collapse = ", ")
+})
+
+netSummary$primary_neighbors <- primary_neighbors_all
+
+# Preview
+head(netSummary)
+```
+
+
+```{r}
+library(tidyr)
+netSummary_long <- netSummary %>%
+  select(where(is.numeric)) %>%       # select only numeric columns
+  mutate(row_id = row_number()) %>%   # optional: keep row index
+  pivot_longer(-row_id, names_to = "metric", values_to = "value")
+
+# -------------------------------
+# Plot faceted histograms
+# -------------------------------
+ggplot(netSummary_long, aes(x=value)) +
+  geom_histogram(fill="skyblue", color="black", bins=20) +
+  facet_wrap(~metric, scales="free") +
+  theme_minimal() +
+  labs(title="Distribution of Network Metrics", x=NULL, y="Count")
+```
+
+```{r}
+library(dplyr)
+
+# Choose centrality to rank by, e.g., weighted degree
+centrality_col <- "wdegree"
+
+top3_per_community <- netSummary %>%
+  group_by(community) %>%
+  arrange(desc(.data[[centrality_col]])) %>%  # sort descending by chosen centrality
+  slice_head(n = 3) %>%                     # pick top 3
+  ungroup() %>%
+  select(community, author, all_of(centrality_col), primary_neighbors)
+
+# Preview
+top3_per_community
+```
+

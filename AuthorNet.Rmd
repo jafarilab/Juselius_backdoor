@@ -37,10 +37,10 @@ length(author_names)
 # FULL COAUTHORSHIP PIPELINE (R)
 # ================================
 
-# Install packages if needed
-packages <- c("httr", "jsonlite", "dplyr", "purrr")
-installed <- packages %in% rownames(installed.packages())
-if (any(!installed)) install.packages(packages[!installed])
+# # Install packages if needed
+# packages <- c("httr", "jsonlite", "dplyr", "purrr")
+# installed <- packages %in% rownames(installed.packages())
+# if (any(!installed)) install.packages(packages[!installed])
 
 library(httr)
 library(jsonlite)
