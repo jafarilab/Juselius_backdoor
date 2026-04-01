@@ -344,5 +344,7 @@ ggplot2::scale_fill_brewer(palette = "Paired", name = "Community")+
     y = "Total Count of Coauthorships"
   ) +
   theme_minimal()
+
+ggplot2::ggsave("coauthorship_plot.png", plot = last_plot(), width = 8, height = 6)
 ```
 

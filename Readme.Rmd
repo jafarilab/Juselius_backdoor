@@ -6,11 +6,9 @@ date: "2026-04-01"
 
 # Juselius_backdoor
 
-![Coauthorship Scatter Plot](figures/coauthorship_plot.png)
+![](coauthorship_plot.png)
 
-I discovered the names of **Sigrid Juselius Foundation** grantees and analyzed their coauthorship network.
-
-**Juselius_backdoor** is an R pipeline for constructing and analyzing coauthorship networks of grantees using **OpenAlex author IDs**. It extracts authors from a text file, resolves their OpenAlex IDs, retrieves their publications, and builds a weighted coauthorship network.
+**Juselius_backdoor** is an R pipeline for constructing and analyzing coauthorship networks of **Sigrid Juselius Foundation** grantees using **OpenAlex author IDs**. It extracts authors from a text file, resolves their OpenAlex IDs, retrieves their publications, and builds a weighted coauthorship network.
 
 ---
 
@@ -36,13 +34,13 @@ I discovered the names of **Sigrid Juselius Foundation** grantees and analyzed t
 
 ## Installation
 
-```{r}
+```{r, echo=T, eval=FALSE,warning=FALSE}
 # Install required packages
 install.packages(c(
   "httr", "jsonlite", "dplyr", "igraph", "ggraph", 
   "tidygraph", "ggplot2", "ggrepel", "viridis"
 ))
-````
+```
 
 ---
 
@@ -62,7 +60,7 @@ install.packages(c(
 3. Save plots for GitHub README or reports:
 
 ```{r}
-ggplot2::ggsave("figures/coauthorship_plot.png", width = 8, height = 6, dpi = 300)
+ggplot2::ggsave("coauthorship_plot.jpg", width = 8, height = 6, dpi = 300)
 ```
 
 ---
