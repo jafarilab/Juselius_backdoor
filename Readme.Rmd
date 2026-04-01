@@ -1,0 +1,95 @@
+---
+title: "Readme"
+output: html_document
+date: "2026-04-01"
+---
+
+# Juselius_backdoor
+
+![Coauthorship Scatter Plot](figures/coauthorship_plot.png)
+
+I discovered the names of **Sigrid Juselius Foundation** grantees and analyzed their coauthorship network.
+
+**Juselius_backdoor** is an R pipeline for constructing and analyzing coauthorship networks of grantees using **OpenAlex author IDs**. It extracts authors from a text file, resolves their OpenAlex IDs, retrieves their publications, and builds a weighted coauthorship network.
+
+---
+
+## Features
+
+- Extracts grantee names from text files.  
+- Resolves authors to **OpenAlex IDs**.  
+- Collects publication data for each author.  
+- Builds a weighted coauthorship network.  
+- Computes network metrics:  
+  - Degree (number of collaborators)  
+  - Weighted degree  
+  - Betweenness (key connectors)  
+  - Eigenvector centrality (influence)  
+- Detects communities using the **Louvain algorithm**.  
+- Generates visualizations:  
+  - Network graph with community coloring  
+  - **Scatter plot of one-time vs. total coauthorship**  
+  - Histograms of centrality measures  
+- Exports networks for **Gephi** analysis (`.gml` format).  
+
+---
+
+## Installation
+
+```{r}
+# Install required packages
+install.packages(c(
+  "httr", "jsonlite", "dplyr", "igraph", "ggraph", 
+  "tidygraph", "ggplot2", "ggrepel", "viridis"
+))
+````
+
+---
+
+## Usage
+
+1. Place your grantee text file in the project folder (e.g., `jus2026adult.txt`).
+
+2. Run the pipeline R scripts in order:
+
+   * Extract author names
+   * Search OpenAlex IDs
+   * Retrieve papers
+   * Build the coauthorship network
+   * Compute network metrics
+   * Visualize results
+
+3. Save plots for GitHub README or reports:
+
+```{r}
+ggplot2::ggsave("figures/coauthorship_plot.png", width = 8, height = 6, dpi = 300)
+```
+
+---
+
+## Example Scatter Plot
+
+This scatter plot shows each grantee's number of **one-time coauthorships** vs. **total coauthorships**, colored by detected community:
+
+![Coauthorship Scatter Plot](figures/coauthorship_plot.png)
+
+---
+
+## Output
+
+* Weighted coauthorship network (`.gml`) for Gephi
+* Network metrics per author (`netSummary`)
+* Visualizations of network structure and centrality
+
+---
+
+## License
+
+MIT License – free to use and modify.
+
+```
+
+This is a fully self-contained **R Markdown README**.  
+
+If you want, I can also add a **“Quick Start” code chunk** at the top so users can generate the scatter plot in **one go**, which is very handy for GitHub. Do you want me to do that?
+```
