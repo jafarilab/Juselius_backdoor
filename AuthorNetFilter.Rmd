@@ -337,8 +337,12 @@ library(viridis)
 
 ggplot2::ggplot(netSummary, aes(x = degree, y = wdegree, fill = as.factor(community))) +
   geom_point(shape = 21, size = 3, colour = "black", stroke = 0.5) +
-  ggrepel::geom_text_repel(aes(label = author)) +
-  ggplot2::scale_fill_viridis_d(option = "D", name = "Community") +
+  ggrepel::geom_text_repel(aes(label = author), size = 3, max.overlaps = 20) +
+ggplot2::scale_fill_brewer(palette = "Paired", name = "Community")+
+  labs(
+    x = "Count of One-Time Coauthorships",
+    y = "Total Count of Coauthorships"
+  ) +
   theme_minimal()
 ```
 
