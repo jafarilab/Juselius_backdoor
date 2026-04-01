@@ -331,3 +331,14 @@ top3_per_community <- netSummary %>%
 top3_per_community
 ```
 
+```{r}
+install.packages("viridis")
+library(viridis)
+
+ggplot2::ggplot(netSummary, aes(x = degree, y = wdegree, fill = as.factor(community))) +
+  geom_point(shape = 21, size = 3, colour = "black", stroke = 0.5) +
+  ggrepel::geom_text_repel(aes(label = author)) +
+  ggplot2::scale_fill_viridis_d(option = "D", name = "Community") +
+  theme_minimal()
+```
+
