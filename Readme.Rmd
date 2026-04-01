@@ -57,21 +57,6 @@ install.packages(c(
    * Compute network metrics
    * Visualize results
 
-3. Save plots for GitHub README or reports:
-
-```{r}
-ggplot2::ggsave("coauthorship_plot.jpg", width = 8, height = 6, dpi = 300)
-```
-
----
-
-## Example Scatter Plot
-
-This scatter plot shows each grantee's number of **one-time coauthorships** vs. **total coauthorships**, colored by detected community:
-
-![Coauthorship Scatter Plot](figures/coauthorship_plot.png)
-
----
 
 ## Output
 
