@@ -347,4 +347,95 @@ ggplot2::scale_fill_brewer(palette = "Paired", name = "Community")+
 
 ggplot2::ggsave("coauthorship_plot.png", plot = last_plot(), width = 8, height = 6)
 ```
+```{r}
+# ================================
+# 🔑 Extract Keywords for Community Labels
+# ================================
+
+library(tidytext)
+library(stringr)
+
+# Step 1: Extract keywords from papers
+# OpenAlex uses 'concepts' for keywords
+all_keywords <- lapply(all_papers, function(p) {
+  if(!is.null(p$concepts) && length(p$concepts) > 0){
+    sapply(p$concepts, function(c) c$display_name)
+  } else {
+    NULL
+  }
+})
+all_keywords <- unlist(all_keywords)
+all_keywords <- tolower(all_keywords)  # normalize
+
+# Optional: remove very generic terms (like "science", "research")
+stopwords <- c("science", "research", "study", "analysis", "method")
+all_keywords <- all_keywords[!all_keywords %in% stopwords]
+
+# Step 2: Map papers to authors
+paper_author_map <- lapply(all_papers, function(p) {
+  ids <- sapply(p$authorships, function(a) a$author$id)
+  ids <- ids[ids %in% author_ids]  # keep only our grantees
+  ids
+})
+
+# Step 3: Aggregate keywords per author
+# -------------------------------
+# 🔑 Safe extraction of specific keywords
+# -------------------------------
+author_keywords <- list()
+
+for(paper in all_papers){
+  kws <- paper$concepts
+  if(is.null(kws) || length(kws) == 0) next
+  
+  # Extract levels safely
+  levels <- sapply(kws, function(c) {
+    if(!is.null(c$level)) c$level else NA
+  })
+  
+  # Keep only level >= 3
+  kws <- kws[!is.na(levels) & levels >= 3]
+  if(length(kws) == 0) next
+  
+  # Extract names safely
+  kws_names <- sapply(kws, function(c) {
+    if(!is.null(c$display_name)) tolower(c$display_name) else NA
+  })
+  kws_names <- kws_names[!is.na(kws_names)]
+  if(length(kws_names) == 0) next
+  
+  # Map to authors in grantee list
+  authors_in_paper <- sapply(paper$authorships, function(a) {
+    if(!is.null(a$author$id)) a$author$id else NA
+  })
+  authors_in_paper <- authors_in_paper[!is.na(authors_in_paper) & authors_in_paper %in% author_ids]
+  
+  for(aid in authors_in_paper){
+    author_keywords[[aid]] <- c(author_keywords[[aid]], kws_names)
+  }
+}
+
+# Step 4: Aggregate keywords per community
+community_keywords <- lapply(unique(V(g)$community), function(comm){
+  member_ids <- V(g)$name[V(g)$community == comm]
+  member_aids <- author_id_map$id[author_id_map$name %in% member_ids]
+  
+  kws <- unlist(author_keywords[member_aids])
+  kws <- kws[!is.na(kws)]
+  
+  if(length(kws) == 0) return(NA)
+  
+  # Most frequent keyword
+  kw_table <- sort(table(kws), decreasing = TRUE)
+  names(kw_table)[1]
+})
+
+names(community_keywords) <- unique(V(g)$community)
+
+# Step 5: Assign community labels
+V(g)$community_label <- sapply(V(g)$community, function(comm) community_keywords[[as.character(comm)]])
+
+# Preview community labels
+community_keywords
+```
 
