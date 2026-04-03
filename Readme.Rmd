@@ -64,6 +64,8 @@ install.packages(c(
 * Network metrics per author (`netSummary`)
 * Visualizations of network structure and centrality
 
+[Interactive Network on GitHub Pages](https://username.github.io/project/network.html)
+
 ---
 
 ## License

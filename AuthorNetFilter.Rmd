@@ -217,7 +217,6 @@ gg <- ggraph(tg, layout = "fr") +
   geom_node_point(aes(size = degree, color = as.factor(community))) +
   geom_node_text(aes(label = name), repel = TRUE, size = 3) +
   theme_void()
-gg %>% plotly::ggplotly()
 
 # ================================
 # 🔍 Top central authors
@@ -238,6 +237,46 @@ print(sort(V(g)$eigen, decreasing = TRUE)[1:10])
 # 💾 Optional: export for Gephi
 # ================================
 write_graph(g, file = "coauthorship_network.gml", format = "gml")
+```
+```{r}
+library(igraph)
+library(networkD3)
+
+# Extract nodes and edges
+nodes <- data.frame(
+  name = V(g)$name,
+  group = V(g)$community_label   # use your community label for coloring
+)
+
+edges <- as.data.frame(get.edgelist(g))
+colnames(edges) <- c("source_name", "target_name")
+
+# networkD3 expects numeric indices starting from 0
+edges$source <- match(edges$source_name, nodes$name) - 1
+edges$target <- match(edges$target_name, nodes$name) - 1
+
+# Optional: include edge weights if you want
+edges$value <- E(g)$weight
+
+# Create interactive network
+fn <- forceNetwork(
+  Links = edges,
+  Nodes = nodes,
+  Source = "source",
+  Target = "target",
+  NodeID = "name",
+  Group = "group",
+  Value = "value",      # optional: edge thickness
+  opacity = 0.9,
+  zoom = TRUE,
+  fontSize = 12,
+  linkDistance = 50
+)
+
+fn
+
+# Save as HTML
+saveWidget(fn, "network.html", selfcontained = TRUE)
 ```
 
 ```{r}
