@@ -66,7 +66,8 @@ install.packages(c(
 - Network metrics per author (`netSummary`)
 - Visualizations of network structure and centrality
 
-------------------------------------------------------------------------
+## <a href="network.html" target="_blank">View Interactive Co-authorship
+Network</a>
 
 ## License
 
