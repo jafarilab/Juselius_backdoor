@@ -488,6 +488,7 @@ top3_per_community <- netSummary %>%
 top3_per_community
 ```
 
+## Readme plot
 ```{r}
 library(ggplot2)
 library(ggrepel)
@@ -511,7 +512,7 @@ p <- ggplot(netSummary, aes(x = degree, y = wdegree, fill = as.factor(community)
   # Upper region label
   geom_label(
     aes(
-      x = max(netSummary$degree)*0.8,
+      x = max(netSummary$degree)*0.65,
       y = max(netSummary$wdegree)*0.9
     ),
     label = "Researchers who would like to\nstrengthen the current network",
@@ -525,7 +526,7 @@ p <- ggplot(netSummary, aes(x = degree, y = wdegree, fill = as.factor(community)
   # Lower region label
   geom_label(
     aes(
-      x = max(netSummary$degree)*0.8,
+      x = max(netSummary$degree)*0.65,
       y = max(netSummary$wdegree)*0.1
     ),
     label = "Researchers who would like to\nexpand network",
@@ -683,6 +684,7 @@ netSummary$community_keywords <- community_keywords[
 
 library(igraph)
 library(networkD3)
+library(htmlwidgets)
 
 # Extract nodes and edges
 nodes <- data.frame(

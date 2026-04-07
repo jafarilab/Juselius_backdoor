@@ -75,16 +75,16 @@ kable(top10_display, format = "markdown")
 
 |  | author | degree | wdegree | betweenness | community | primary_neighbor_MaxW |
 |:---|:---|---:|---:|---:|---:|:---|
-| 191 | Tammela Teuvo | 32 | 2448 | 0.0015354 | 2 | Auvinen Anssi |
-| 87 | Knip Mikael | 51 | 2287 | 0.0318919 | 12 | Toppari Jorma |
-| 6 | Aittokallio Tero | 55 | 2056 | 0.0120418 | 5 | Kontro Mika |
-| 163 | Ristimäki Ari | 60 | 1932 | 0.0157585 | 5 | Haglund Caj |
-| 197 | Toppari Jorma | 51 | 1899 | 0.0207606 | 12 | Knip Mikael |
-| 211 | Visakorpi Tapio | 43 | 1876 | 0.0165469 | 2 | Nykter Matti |
-| 33 | Haglund Caj | 47 | 1826 | 0.0172786 | 5 | Ristimäki Ari |
-| 19 | Carpen Olli | 76 | 1809 | 0.0319828 | 10 | Hautaniemi Sampsa |
-| 145 | Palotie Aarno | 103 | 1751 | 0.0487733 | 1 | Pirinen Matti |
-| 180 | Schleutker Johanna | 39 | 1647 | 0.0000419 | 2 | Tammela Teuvo |
+| 193 | Tammela Teuvo | 33 | 4897 | 0.0006030 | 2 | Auvinen Anssi |
+| 88 | Knip Mikael | 51 | 4574 | 0.0297573 | 13 | Toppari Jorma |
+| 6 | Aittokallio Tero | 55 | 4097 | 0.0152286 | 6 | Kontro Mika |
+| 165 | Ristimäki Ari | 62 | 3973 | 0.0156645 | 6 | Haglund Caj |
+| 199 | Toppari Jorma | 52 | 3795 | 0.0267586 | 13 | Knip Mikael |
+| 213 | Visakorpi Tapio | 44 | 3774 | 0.0185478 | 2 | Nykter Matti |
+| 33 | Haglund Caj | 49 | 3681 | 0.0164748 | 6 | Ristimäki Ari |
+| 19 | Carpen Olli | 76 | 3613 | 0.0279969 | 12 | Hautaniemi Sampsa |
+| 147 | Palotie Aarno | 103 | 3493 | 0.0462684 | 1 | Pirinen Matti |
+| 182 | Schleutker Johanna | 39 | 3291 | 0.0000411 | 2 | Tammela Teuvo |
 
 - Visualizations of network structure and centrality
 
