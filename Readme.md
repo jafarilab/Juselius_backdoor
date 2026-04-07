@@ -1,6 +1,6 @@
 Readme
 ================
-2026-04-01
+2026-04-07
 
 # Juselius_backdoor
 
@@ -46,7 +46,7 @@ install.packages(c(
 
 ------------------------------------------------------------------------
 
-## Usage
+## 🚀 Usage
 
 1.  Place your grantee text file in the project folder (e.g.,
     `jus2026adult.txt`).
@@ -60,18 +60,13 @@ install.packages(c(
     - Compute network metrics
     - Visualize results
 
-## Output
+## 📊 Output
 
 - Weighted coauthorship network (`.gml`) for Gephi
 - Network metrics per author (`netSummary`)
+- Visualizations of network structure and centrality
 
-``` r
-library(knitr)
-netSummary <- read.csv("netSummary.csv")
-top10 <- netSummary[order(-netSummary$wdegree), ][1:10, ]
-top10_display <- top10[, c("author", "degree", "wdegree", "betweenness", "community", "primary_neighbor_MaxW")]
-kable(top10_display, format = "markdown")
-```
+Top 10 Researchers (by weighted degree):
 
 |  | author | degree | wdegree | betweenness | community | primary_neighbor_MaxW |
 |:---|:---|---:|---:|---:|---:|:---|
@@ -86,9 +81,65 @@ kable(top10_display, format = "markdown")
 | 147 | Palotie Aarno | 103 | 3493 | 0.0462684 | 1 | Pirinen Matti |
 | 182 | Schleutker Johanna | 39 | 3291 | 0.0000411 | 2 | Tammela Teuvo |
 
-- Visualizations of network structure and centrality
+Top 3 Researchers per Community:
+
+| author                  | wdegree | community |
+|:------------------------|--------:|----------:|
+| Palotie Aarno           |    3493 |         1 |
+| Hiltunen Mikko          |    2320 |         1 |
+| Rinne Juha              |    2090 |         1 |
+| Tammela Teuvo           |    4897 |         2 |
+| Visakorpi Tapio         |    3774 |         2 |
+| Schleutker Johanna      |    3291 |         2 |
+| Töyräs Juha             |    1442 |         3 |
+| Korhonen Rami           |    1246 |         3 |
+| Saarakkala Simo         |     951 |         3 |
+| Jalkanen Sirpa          |    2748 |         4 |
+| Salmi Marko             |    2182 |         4 |
+| Roivainen Anne          |    1763 |         4 |
+| Saarma Mart             |     627 |         5 |
+| Palva Matias            |     572 |         5 |
+| Palva Satu              |     456 |         5 |
+| Aittokallio Tero        |    4097 |         6 |
+| Ristimäki Ari           |    3973 |         6 |
+| Haglund Caj             |    3681 |         6 |
+| Alitalo Kari            |    2618 |         7 |
+| Yla Herttuala           |    2052 |         7 |
+| Malm Tarja              |    1599 |         7 |
+| Hallman Mikko           |     667 |         8 |
+| Rämet Mika              |     556 |         8 |
+| Ashorn Per              |     276 |         8 |
+| Groop Per-Henrik        |    1810 |         9 |
+| Pietiläinen Kirsi       |    1150 |         9 |
+| Sandholm-Lafferre Niina |     873 |         9 |
+| Belogurov Georgi        |      80 |        10 |
+| Malinen Anssi           |      48 |        10 |
+| Metsä-Ketelä Mikko      |      44 |        10 |
+| Vapalahti Olli          |    2251 |        11 |
+| Varjosalo Markku        |    1830 |        11 |
+| Kere Juha               |    1722 |        11 |
+| Carpen Olli             |    3613 |        12 |
+| Hautaniemi Sampsa       |    3236 |        12 |
+| Kauppi Liisa            |    1576 |        12 |
+| Knip Mikael             |    4574 |        13 |
+| Toppari Jorma           |    3795 |        13 |
+| Hyöty Heikki            |    3224 |        13 |
 
 ## [View Interactive Co-authorship Network](https://jafarilab.github.io/Juselius_backdoor/network.html)
+
+## ⚠️ Notes & Limitations
+
+- Author matching is based on name search and may introduce minor errors
+- OpenAlex data is continuously updated → results may vary between runs
+- API rate limits and connectivity can affect data retrieval
+- Some manual validation was performed, but results are not error-free
+
+## 📌 Interpretation Notes
+
+- High degree + low wdegree → broad but shallow collaboration
+- Low degree + high wdegree → deep collaboration with few partners
+- Primary neighbor → strongest collaboration link (potential entry point
+  into a research cluster)
 
 ## License
 

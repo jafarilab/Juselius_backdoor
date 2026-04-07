@@ -1,7 +1,7 @@
 ---
 title: "Readme"
 output: github_document
-date: "2026-04-01"
+date: "`r Sys.Date()`"
 ---
 
 # Juselius_backdoor
@@ -44,7 +44,7 @@ install.packages(c(
 
 ---
 
-## Usage
+## 🚀 Usage
 
 1. Place your grantee text file in the project folder (e.g., `jus2026adult.txt`).
 
@@ -58,11 +58,16 @@ install.packages(c(
    * Visualize results
 
 
-## Output
+## 📊 Output
 
 * Weighted coauthorship network (`.gml`) for Gephi
 * Network metrics per author (`netSummary`)
-```{r}
+* Visualizations of network structure and centrality
+
+
+Top 10 Researchers (by weighted degree):
+
+```{r, echo=F}
 library(knitr)
 netSummary <- read.csv("netSummary.csv")
 top10 <- netSummary[order(-netSummary$wdegree), ][1:10, ]
@@ -70,11 +75,34 @@ top10_display <- top10[, c("author", "degree", "wdegree", "betweenness", "commun
 kable(top10_display, format = "markdown")
 ```
 
+Top 3 Researchers per Community:
+```{r, echo=F}
+library(knitr)
 
-* Visualizations of network structure and centrality
+if(file.exists("top3_per_community.csv")){
+  top3_per_community <- read.csv("top3_per_community.csv")
+  top3each <- top3_per_community[order(top3_per_community$community), ]
+  top3each <- top3each[, c("author", "wdegree", "community")]
+  kable(top3each, format = "markdown")
+} else {
+  cat("File top3_per_community.csv not found. Run the pipeline first.")
+}
+```
+
 
 [View Interactive Co-authorship Network](https://jafarilab.github.io/Juselius_backdoor/network.html)
 ---
+
+## ⚠️ Notes & Limitations
+- Author matching is based on name search and may introduce minor errors
+- OpenAlex data is continuously updated → results may vary between runs
+- API rate limits and connectivity can affect data retrieval
+- Some manual validation was performed, but results are not error-free
+
+## 📌 Interpretation Notes
+- High degree + low wdegree → broad but shallow collaboration
+- Low degree + high wdegree → deep collaboration with few partners
+- Primary neighbor → strongest collaboration link (potential entry point into a research cluster)
 
 ## License
 

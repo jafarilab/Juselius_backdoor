@@ -486,6 +486,8 @@ top3_per_community <- netSummary %>%
 
 # Preview
 top3_per_community
+
+write.csv(top3_per_community, "top3_per_community.csv", row.names = FALSE)
 ```
 
 ## Readme plot
@@ -711,17 +713,18 @@ fn <- forceNetwork(
   Target = "target",
   NodeID = "name",
   Group = "group",
-  Value = "value",              # edge thickness
-  Nodesize = "degree_scaled",         # use the transformed column
-  radiusCalculation = JS("d.degree_scaled*2"),  # scale factor for visibility
+  Value = "value",          # edge thickness
+  Nodesize = "degree_scaled", # node size
   opacity = 0.9,
   zoom = TRUE,
-  fontSize = 50,
-  linkDistance = 50
+  fontSize = 12
 )
+
 
 fn
 
 # Save as HTML
 saveWidget(fn, "network.html", selfcontained = TRUE)
+browseURL("network.html")
+
 ```
