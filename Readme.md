@@ -64,10 +64,31 @@ install.packages(c(
 
 - Weighted coauthorship network (`.gml`) for Gephi
 - Network metrics per author (`netSummary`)
+
+``` r
+library(knitr)
+netSummary <- read.csv("netSummary.csv")
+top10 <- netSummary[order(-netSummary$wdegree), ][1:10, ]
+top10_display <- top10[, c("author", "degree", "wdegree", "betweenness", "community", "primary_neighbor_MaxW")]
+kable(top10_display, format = "markdown")
+```
+
+|  | author | degree | wdegree | betweenness | community | primary_neighbor_MaxW |
+|:---|:---|---:|---:|---:|---:|:---|
+| 191 | Tammela Teuvo | 32 | 2448 | 0.0015354 | 2 | Auvinen Anssi |
+| 87 | Knip Mikael | 51 | 2287 | 0.0318919 | 12 | Toppari Jorma |
+| 6 | Aittokallio Tero | 55 | 2056 | 0.0120418 | 5 | Kontro Mika |
+| 163 | Ristimäki Ari | 60 | 1932 | 0.0157585 | 5 | Haglund Caj |
+| 197 | Toppari Jorma | 51 | 1899 | 0.0207606 | 12 | Knip Mikael |
+| 211 | Visakorpi Tapio | 43 | 1876 | 0.0165469 | 2 | Nykter Matti |
+| 33 | Haglund Caj | 47 | 1826 | 0.0172786 | 5 | Ristimäki Ari |
+| 19 | Carpen Olli | 76 | 1809 | 0.0319828 | 10 | Hautaniemi Sampsa |
+| 145 | Palotie Aarno | 103 | 1751 | 0.0487733 | 1 | Pirinen Matti |
+| 180 | Schleutker Johanna | 39 | 1647 | 0.0000419 | 2 | Tammela Teuvo |
+
 - Visualizations of network structure and centrality
 
-## <a href="network.html" target="_blank">View Interactive Co-authorship
-Network</a>
+## [View Interactive Co-authorship Network](https://jafarilab.github.io/Juselius_backdoor/network.html)
 
 ## License
 

@@ -3,13 +3,24 @@ title: "AuthorNet2"
 output: html_document
 date: "2026-03-21"
 ---
-
+# 1. Data Ingestion and Name Extraction
 ```{r}
 # ================================
-# COAUTHORSHIP NETWORK PIPELINE USING OPENALEX AUTHOR IDs
+# LOAD DATA & EXTRACT GRANTEE NAMES
 # ================================
 
-# Packages
+# Load required packages for API calls and data handling
+
+# Read raw text file containing grantee information
+
+# Extract candidate names using regex (Firstname Lastname format)
+
+# Clean and filter extracted names:
+# - Remove institutional or non-person entries
+# - Keep only two-word names
+# - Ensure uniqueness
+
+
 # install.packages(c("httr","jsonlite","dplyr"))
 library(httr)
 library(jsonlite)
@@ -29,11 +40,25 @@ names_raw <- regmatches(text, matches)[[1]]
 
 author_names <- unique(names_raw)
 author_names <- author_names[!grepl("Apurahansaaja|Stipendiat|Tutkimuslaitos|Forskningsinstitut|Määrä|Belopp|Vuotta|År", author_names)]
-author_names <- author_names[sapply(strsplit(author_names, " "), length) == 2]
+(author_names <- author_names[sapply(strsplit(author_names, " "), length) == 2])
+```
 
-# -------------------------------
-# STEP 2: Search OpenAlex author IDs
-# -------------------------------
+# 2. Author Identification via OpenAlex API
+```{r}
+# ================================
+# RESOLVE AUTHORS USING OPENALEX
+# ================================
+
+# Function to query OpenAlex API and retrieve author candidates
+
+# Loop through names:
+# - Search OpenAlex
+# - Handle missing results
+# - Select best match using highest works_count (proxy for relevance)
+# - Store author IDs and metadata
+# - Pause requests to avoid API rate limits (HTTP 429)
+
+
 search_author <- function(name) {
   url <- paste0("https://api.openalex.org/authors?search=", URLencode(name))
   res <- GET(url)
@@ -63,20 +88,114 @@ author_id_map <- data.frame(id=character(), name=character(), stringsAsFactors =
 
 
 ```{r}
-for(name in author_names){
-  cat("\nSearching for:", name, "\n")
-  res <- search_author(name)
-  
-  if(all(is.na(res$id))) next
-  
-  # Pick first result automatically
-  author_ids <- c(author_ids, res$id[1])
-  author_id_map <- rbind(author_id_map, data.frame(id=res$id[1], name=name, stringsAsFactors = FALSE))
-}
+## Pickup based on highest value
 
-# -------------------------------
-# STEP 3: Function to get all papers for a given author ID
-# -------------------------------
+# for(name in author_names){
+#   cat("\nSearching for:", name, "\n")
+#   
+#   res <- search_author(name)
+#   
+#   if(is.null(res) || all(is.na(res$id))) next
+#   
+#   # Pick author with highest works_count
+#   best_idx <- which.max(res$works_count)
+#   chosen <- res[best_idx, ]
+#   
+#   author_ids <- c(author_ids, chosen$id)
+#   
+#   author_id_map <- rbind(
+#     author_id_map,
+#     data.frame(
+#       id = chosen$id,
+#       name = name,
+#       display_name = chosen$display_name,
+#       works_count = chosen$works_count,
+#       stringsAsFactors = FALSE
+#     )
+#   )
+#   
+#   cat("Selected:", chosen$display_name, 
+#       "| works:", chosen$works_count, "\n")
+#   
+#   Sys.sleep(1)  # avoid 429
+# }
+
+#### Manual pickup
+
+# for(name in author_names){
+#   cat("\n============================\n")
+#   cat("Searching for:", name, "\n")
+#   
+#   res <- search_author(name)
+#   
+#   if(is.null(res) || all(is.na(res$id))){
+#     cat("No results found. Skipping...\n")
+#     next
+#   }
+#   
+#   # Show results to user
+#   print(data.frame(
+#     index = seq_len(nrow(res)),
+#     display_name = res$display_name,
+#     works_count = res$works_count
+#   ))
+#   
+#   # Ask user to choose
+#   choice <- readline(prompt = "Select author index (or press Enter to skip): ")
+#   
+#   if(choice == "") {
+#     cat("Skipped.\n")
+#     next
+#   }
+#   
+#   choice <- as.numeric(choice)
+#   
+#   if(is.na(choice) || choice < 1 || choice > nrow(res)){
+#     cat("Invalid choice. Skipping...\n")
+#     next
+#   }
+#   
+#   chosen <- res[choice, ]
+#   
+#   # Store selection
+#   author_ids <- c(author_ids, chosen$id)
+#   
+#   author_id_map <- rbind(
+#     author_id_map,
+#     data.frame(
+#       id = chosen$id,
+#       name = name,
+#       display_name = chosen$display_name,
+#       works_count = chosen$works_count,
+#       stringsAsFactors = FALSE
+#     )
+#   )
+#   
+#   cat("Selected:", chosen$display_name,
+#       "| works:", chosen$works_count, "\n")
+#   
+#   Sys.sleep(1)  # avoid 429
+# }
+# 
+# write.csv(author_id_map, "author_id_map.csv", row.names = FALSE)
+# write.csv(author_ids, "author_ids.csv", row.names = FALSE)
+author_ids <- read.csv("author_ids.csv")
+author_id_map <- read.csv("author_id_map.csv")
+```
+
+# 3. Retrieve Publication Data and Construct Co-authorship Relationships
+```{r}
+# ================================
+# FETCH PUBLICATIONS FOR EACH AUTHOR
+# ================================
+
+# Function to retrieve all works for an author using cursor-based pagination
+
+# Loop through all author IDs:
+# - Download complete publication lists
+# - Store in a combined structure
+
+
 get_all_papers <- function(author_id){
   papers <- list()
   cursor <- "*"
@@ -95,9 +214,21 @@ get_all_papers <- function(author_id){
   papers
 }
 
-# -------------------------------
-# STEP 4: Get all papers for all grantees
-# -------------------------------
+# ================================
+# BUILD COAUTHORSHIP EDGES
+# ================================
+
+# Extract coauthor IDs from each paper:
+# - Keep only authors within the target group
+# - Remove single-author papers
+
+# Generate pairwise coauthor combinations
+
+# Convert to edge list and map author IDs back to names
+
+# Aggregate repeated collaborations into weighted edges
+
+
 all_papers <- list()
 for(aid in author_ids){
   cat("\nFetching papers for:", aid, "\n")
@@ -154,7 +285,7 @@ print(edges_weighted)
 ```
 
 
-
+# 4. Network Construction and Metrics
 ```{r}
 # ================================
 # 📦 Install & load packages
@@ -173,17 +304,28 @@ library(ggplot2)
 # edges_weighted must have:
 # author1 | author2 | weight
 
-# Example (remove if you already have data):
-# edges_weighted <- data.frame(
-#   author1 = c("A","A","B","C"),
-#   author2 = c("B","C","C","D"),
-#   weight = c(3,2,1,4)
-# )
+# ================================
+# NETWORK CREATION & CENTRALITY ANALYSIS
+# ================================
+
+# Build undirected graph from edge list
+
+# Compute centrality measures:
+# - Degree (collaboration count)
+# - Betweenness (bridge role)
+# - Closeness (reachability)
+# - Eigenvector (influence)
+
+# Detect communities using Louvain algorithm
+
+# Optionally remove low-degree nodes to simplify network
+
+# Prepare graph for visualization
 
 # ================================
 # 🧠 Build graph
 # ================================
-g <- graph_from_data_frame(edges_weighted, directed = FALSE)
+(g <- graph_from_data_frame(edges_weighted, directed = FALSE))
 
 # ================================
 # 📊 Centrality measures
@@ -238,46 +380,7 @@ print(sort(V(g)$eigen, decreasing = TRUE)[1:10])
 # ================================
 write_graph(g, file = "coauthorship_network.gml", format = "gml")
 ```
-```{r}
-library(igraph)
-library(networkD3)
 
-# Extract nodes and edges
-nodes <- data.frame(
-  name = V(g)$name,
-  group = V(g)$community_label   # use your community label for coloring
-)
-
-edges <- as.data.frame(get.edgelist(g))
-colnames(edges) <- c("source_name", "target_name")
-
-# networkD3 expects numeric indices starting from 0
-edges$source <- match(edges$source_name, nodes$name) - 1
-edges$target <- match(edges$target_name, nodes$name) - 1
-
-# Optional: include edge weights if you want
-edges$value <- E(g)$weight
-
-# Create interactive network
-fn <- forceNetwork(
-  Links = edges,
-  Nodes = nodes,
-  Source = "source",
-  Target = "target",
-  NodeID = "name",
-  Group = "group",
-  Value = "value",      # optional: edge thickness
-  opacity = 0.9,
-  zoom = TRUE,
-  fontSize = 12,
-  linkDistance = 50
-)
-
-fn
-
-# Save as HTML
-saveWidget(fn, "network.html", selfcontained = TRUE)
-```
 
 ```{r}
 netSummary <- data.frame(
@@ -333,10 +436,25 @@ netSummary$primary_neighbors <- primary_neighbors_all
 
 # Preview
 head(netSummary)
+
+write.csv(netSummary, "netSummary.csv", row.names = FALSE)
 ```
 
 
+# 5. Network Visualization and Key Players
 ```{r}
+# ================================
+# VISUALIZATION & IDENTIFICATION OF KEY AUTHORS
+# ================================
+
+# Plot network using force-directed layout
+
+# Display node size (degree) and color (community)
+
+# Identify and print top authors by centrality metrics
+
+# Export network for external tools (e.g., Gephi)
+
 library(tidyr)
 netSummary_long <- netSummary %>%
   select(where(is.numeric)) %>%       # select only numeric columns
@@ -364,32 +482,95 @@ top3_per_community <- netSummary %>%
   arrange(desc(.data[[centrality_col]])) %>%  # sort descending by chosen centrality
   slice_head(n = 3) %>%                     # pick top 3
   ungroup() %>%
-  select(community, author, all_of(centrality_col), primary_neighbors)
+  dplyr::select(community, author, all_of(centrality_col), primary_neighbors)
 
 # Preview
 top3_per_community
 ```
 
 ```{r}
-install.packages("viridis")
+library(ggplot2)
+library(ggrepel)
 library(viridis)
 
-ggplot2::ggplot(netSummary, aes(x = degree, y = wdegree, fill = as.factor(community))) +
+slope <- median(netSummary$wdegree / netSummary$degree, na.rm = TRUE)
+slope
+
+p <- ggplot(netSummary, aes(x = degree, y = wdegree, fill = as.factor(community))) +
+  
+  # Points
   geom_point(shape = 21, size = 3, colour = "black", stroke = 0.5) +
-  ggrepel::geom_text_repel(aes(label = author), size = 3, max.overlaps = 20) +
-ggplot2::scale_fill_brewer(palette = "Paired", name = "Community")+
+  
+  # Labels
+  geom_text_repel(aes(label = author), size = 3, max.overlaps = 20) +
+  
+  # 🔹 Diagonal line y = x
+  geom_abline(slope = slope, intercept = 0, linetype = "solid", color = "blue") +
+  
+  # 🔹 Region annotations
+  # Upper region label
+  geom_label(
+    aes(
+      x = max(netSummary$degree)*0.8,
+      y = max(netSummary$wdegree)*0.9
+    ),
+    label = "Researchers who would like to\nstrengthen the current network",
+    size = 4,
+    fill = "lightpink",
+    color = "black",
+    label.size = 0.3,
+    hjust = 0
+  ) +
+  
+  # Lower region label
+  geom_label(
+    aes(
+      x = max(netSummary$degree)*0.8,
+      y = max(netSummary$wdegree)*0.1
+    ),
+    label = "Researchers who would like to\nexpand network",
+    size = 4,
+    fill = "palegreen",
+    color = "black",
+    label.size = 0.3,
+    hjust = 0
+  )+
+  
+  scale_fill_brewer(palette = "Paired", name = "Community") +
+  
   labs(
     x = "Count of One-Time Coauthorships",
     y = "Total Count of Coauthorships"
   ) +
+  
   theme_minimal()
 
-ggplot2::ggsave("coauthorship_plot.png", plot = last_plot(), width = 8, height = 6)
+# Save
+ggsave("coauthorship_plot.png", plot = p, width = 8, height = 6)
+p
 ```
+
+
+# 6. Keyword Extraction and Community Labeling
 ```{r}
 # ================================
-# 🔑 Extract Keywords for Community Labels
+# EXTRACT RESEARCH TOPICS & LABEL COMMUNITIES
 # ================================
+
+# Extract keywords (concepts) from OpenAlex metadata
+
+# Clean and normalize terms:
+# - Lowercase
+# - Remove generic stopwords
+
+# Aggregate keywords:
+# - Per paper → per author → per community
+
+# Select dominant keyword per community
+
+# Assign research theme labels to communities
+
+# Attach labels to summary dataset
 
 library(tidytext)
 library(stringr)
@@ -476,5 +657,69 @@ V(g)$community_label <- sapply(V(g)$community, function(comm) community_keywords
 
 # Preview community labels
 community_keywords
+netSummary$community_keywords <- community_keywords[
+  as.character(netSummary$community)
+]
 ```
 
+# 7. Interactive Network Visualization
+```{r}
+# ================================
+# BUILD INTERACTIVE NETWORK (networkD3)
+# ================================
+
+# Prepare nodes and edges for D3 format
+
+# Map node attributes:
+# - Community label (color)
+# - Degree (size)
+
+# Create interactive force-directed network:
+# - Zoomable
+# - Scalable node sizes
+# - Weighted edges
+
+# Export as HTML for sharing
+
+library(igraph)
+library(networkD3)
+
+# Extract nodes and edges
+nodes <- data.frame(
+  name = V(g)$name,
+  group = V(g)$community_label   # use your community label for coloring
+)
+
+edges <- as.data.frame(get.edgelist(g))
+colnames(edges) <- c("source_name", "target_name")
+
+# networkD3 expects numeric indices starting from 0
+edges$source <- match(edges$source_name, nodes$name) - 1
+edges$target <- match(edges$target_name, nodes$name) - 1
+
+# Optional: include edge weights if you want
+edges$value <- E(g)$weight
+nodes$degree <- degree(g)
+nodes$degree_scaled <- sqrt(nodes$degree)
+# Create interactive network
+fn <- forceNetwork(
+  Links = edges,
+  Nodes = nodes,
+  Source = "source",
+  Target = "target",
+  NodeID = "name",
+  Group = "group",
+  Value = "value",              # edge thickness
+  Nodesize = "degree_scaled",         # use the transformed column
+  radiusCalculation = JS("d.degree_scaled*2"),  # scale factor for visibility
+  opacity = 0.9,
+  zoom = TRUE,
+  fontSize = 50,
+  linkDistance = 50
+)
+
+fn
+
+# Save as HTML
+saveWidget(fn, "network.html", selfcontained = TRUE)
+```

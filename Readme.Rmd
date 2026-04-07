@@ -62,9 +62,18 @@ install.packages(c(
 
 * Weighted coauthorship network (`.gml`) for Gephi
 * Network metrics per author (`netSummary`)
+```{r}
+library(knitr)
+netSummary <- read.csv("netSummary.csv")
+top10 <- netSummary[order(-netSummary$wdegree), ][1:10, ]
+top10_display <- top10[, c("author", "degree", "wdegree", "betweenness", "community", "primary_neighbor_MaxW")]
+kable(top10_display, format = "markdown")
+```
+
+
 * Visualizations of network structure and centrality
 
-[View Interactive Co-authorship Network](network.html){target="_blank"}
+[View Interactive Co-authorship Network](https://jafarilab.github.io/Juselius_backdoor/network.html)
 ---
 
 ## License
