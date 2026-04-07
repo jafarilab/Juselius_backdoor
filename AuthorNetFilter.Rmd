@@ -551,7 +551,6 @@ p <- ggplot(netSummary, aes(x = degree, y = wdegree, fill = as.factor(community)
 # Save
 ggsave("coauthorship_plot.png", plot = p, width = 8, height = 6)
 p
-p %>% plotly()
 ```
 
 ```{r}
@@ -722,6 +721,16 @@ community_keywords
 netSummary$community_keywords <- community_keywords[
   as.character(netSummary$community)
 ]
+
+community_ratio_summary <- netSummary %>%
++     group_by(community) %>%
++     summarise(
++         mean_ratio = mean(wdegree / degree, na.rm = TRUE),
++         .groups = "drop"
++     ) %>%
++     arrange(desc(mean_ratio))
+> 
+> community_ratio_summary
 ```
 
 # 7. Interactive Network Visualization
