@@ -551,8 +551,67 @@ p <- ggplot(netSummary, aes(x = degree, y = wdegree, fill = as.factor(community)
 # Save
 ggsave("coauthorship_plot.png", plot = p, width = 8, height = 6)
 p
+p %>% plotly()
 ```
 
+```{r}
+library(plotly)
+library(dplyr)
+
+# Create base plotly scatter
+plotly_plot <- plot_ly(
+  data = netSummary,
+  x = ~degree,
+  y = ~wdegree,
+  type = 'scatter',
+  mode = 'markers+text',
+  color = ~as.factor(community),
+  colors = RColorBrewer::brewer.pal(length(unique(netSummary$community)), "Paired"),
+  text = ~author,
+  textposition = 'top right',
+  marker = list(size = 10, line = list(width = 0.5, color = 'black'))
+) %>%
+  # Add diagonal line y = slope * x
+  add_lines(
+    x = c(0, max(netSummary$degree, na.rm = TRUE)),
+    y = c(0, max(netSummary$degree, na.rm = TRUE) * slope),
+    line = list(color = 'blue', dash = 'solid'),
+    inherit = FALSE,
+    showlegend = FALSE
+  ) %>%
+  # Add upper region annotation
+  layout(
+    annotations = list(
+      list(
+        x = max(netSummary$degree)*0.65,
+        y = max(netSummary$wdegree)*0.9,
+        text = "Researchers who would like to<br>strengthen the current network",
+        showarrow = FALSE,
+        font = list(size = 14, color = "black"),
+        bgcolor = "lightpink",
+        bordercolor = "black",
+        borderwidth = 0.5,
+        xanchor = "left"
+      ),
+      list(
+        x = max(netSummary$degree)*0.65,
+        y = max(netSummary$wdegree)*0.1,
+        text = "Researchers who would like to<br>expand network",
+        showarrow = FALSE,
+        font = list(size = 14, color = "black"),
+        bgcolor = "palegreen",
+        bordercolor = "black",
+        borderwidth = 0.5,
+        xanchor = "left"
+      )
+    ),
+    xaxis = list(title = "Count of One-Time Coauthorships"),
+    yaxis = list(title = "Total Count of Coauthorships")
+  )
+
+plotly_plot
+htmlwidgets::saveWidget(plotly_plot, "interactive_plot.html", selfcontained = TRUE)
+```
 
 # 6. Keyword Extraction and Community Labeling
 ```{r}

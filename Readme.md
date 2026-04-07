@@ -12,7 +12,7 @@ coauthorship networks of **Sigrid Juselius Foundation** grantees using
 their OpenAlex IDs, retrieves their publications, and builds a weighted
 coauthorship network.
 
-------------------------------------------------------------------------
+## [View Interactive version of this plot](https://jafarilab.github.io/Juselius_backdoor/interactive_plot.html)
 
 ## Features
 

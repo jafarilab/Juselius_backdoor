@@ -10,6 +10,7 @@ date: "`r Sys.Date()`"
 
 **Juselius_backdoor** is an R pipeline for constructing and analyzing coauthorship networks of **Sigrid Juselius Foundation** grantees using **OpenAlex author IDs**. It extracts authors from a text file, resolves their OpenAlex IDs, retrieves their publications, and builds a weighted coauthorship network.
 
+[View Interactive version of this plot](https://jafarilab.github.io/Juselius_backdoor/interactive_plot.html)
 ---
 
 ## Features
