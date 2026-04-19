@@ -63,7 +63,7 @@ library(tidyr)
 library(purrr)
 medicine_names <- nobels$laureates %>%
   unnest(prizes) %>%
-  filter(category == "medicine", as.numeric(year) > 1989) %>%
+  filter(category == "medicine", as.numeric(year) > 1900) %>%
   mutate(full_name = paste(firstname, surname)) %>%
   distinct(full_name) %>%
   select(full_name)
@@ -119,41 +119,41 @@ author_id_map <- data.frame(id=character(), name=character(), stringsAsFactors =
 
 
 ```{r}
-## Pickup based on highest value
-# 
-# for(name in author_names){
-#   cat("\nSearching for:", name, "\n")
-# 
-#   res <- search_author(name)
-# 
-#   if(is.null(res) || all(is.na(res$id))) next
-# 
-#   # Pick author with highest works_count
-#   best_idx <- which.max(res$works_count)
-#   chosen <- res[best_idx, ]
-# 
-#   author_ids <- c(author_ids, chosen$id)
-# 
-#   author_id_map <- rbind(
-#     author_id_map,
-#     data.frame(
-#       id = chosen$id,
-#       name = name,
-#       display_name = chosen$display_name,
-#       works_count = chosen$works_count,
-#       stringsAsFactors = FALSE
-#     )
-#   )
-# 
-#   cat("Selected:", chosen$display_name,
-#       "| works:", chosen$works_count, "\n")
-# 
-#   Sys.sleep(1)  # avoid 429
-# }
+# Pickup based on highest value
+
+for(name in author_names){
+  cat("\nSearching for:", name, "\n")
+
+  res <- search_author(name)
+
+  if(is.null(res) || all(is.na(res$id))) next
+
+  # Pick author with highest works_count
+  best_idx <- which.max(res$works_count)
+  chosen <- res[best_idx, ]
+
+  author_ids <- c(author_ids, chosen$id)
+
+  author_id_map <- rbind(
+    author_id_map,
+    data.frame(
+      id = chosen$id,
+      name = name,
+      display_name = chosen$display_name,
+      works_count = chosen$works_count,
+      stringsAsFactors = FALSE
+    )
+  )
+
+  cat("Selected:", chosen$display_name,
+      "| works:", chosen$works_count, "\n")
+
+  Sys.sleep(1)  # avoid 429
+}
 
 
-#write.csv(author_id_map, "author_id_map_noble.csv", row.names = FALSE)
-#write.csv(author_ids, "author_ids_noble.csv", row.names = FALSE)
+write.csv(author_id_map, "author_id_map_noble.csv", row.names = FALSE)
+write.csv(author_ids, "author_ids_noble.csv", row.names = FALSE)
 author_ids <- read.csv("author_ids_noble.csv")
 author_id_map <- read.csv("author_id_map_noble.csv")
 ```
@@ -203,7 +203,7 @@ get_all_papers <- function(author_id){
 
 # Aggregate repeated collaborations into weighted edges
 
-
+author_ids <- dplyr::pull(author_ids, x)
 all_papers <- list()
 for(aid in author_ids){
   cat("\nFetching papers for:", aid, "\n")
@@ -250,9 +250,8 @@ edges_df$author2 <- author_id_map$name[match(edges_df$author2_id, author_id_map$
 
 # Optional: count multiple coauthorships
 edges_weighted <- edges_df %>%
-  group_by(author1, author2) %>%
-  summarise(weight=n(), .groups="drop")
-
+  dplyr::group_by(author1, author2) %>%
+  dplyr::summarise(weight = dplyr::n(), .groups = "drop")
 # -------------------------------
 # STEP 8: Preview edges
 # -------------------------------
@@ -353,7 +352,7 @@ print(sort(V(g)$eigen, decreasing = TRUE)[1:10])
 # ================================
 # 💾 Optional: export for Gephi
 # ================================
-write_graph(g, file = "coauthorship_network.gml", format = "gml")
+write_graph(g, file = "coauthorship_network_noble.gml", format = "gml")
 ```
 
 
@@ -412,7 +411,7 @@ netSummary$primary_neighbors <- primary_neighbors_all
 # Preview
 head(netSummary)
 
-write.csv(netSummary, "netSummary.csv", row.names = FALSE)
+write.csv(netSummary, "netSummary_noble.csv", row.names = FALSE)
 ```
 
 
@@ -462,7 +461,7 @@ top3_per_community <- netSummary %>%
 # Preview
 top3_per_community
 
-write.csv(top3_per_community, "top3_per_community.csv", row.names = FALSE)
+write.csv(top3_per_community, "top3_per_community_noble.csv", row.names = FALSE)
 ```
 
 ## Readme plot
@@ -524,7 +523,7 @@ p <- ggplot(netSummary, aes(x = degree, y = wdegree, fill = as.factor(community)
   theme_minimal()
 
 # Save
-ggsave("coauthorship_plot.png", plot = p, width = 8, height = 6)
+ggsave("coauthorship_plot_noble.png", plot = p, width = 8, height = 6)
 p
 ```
 
@@ -584,7 +583,7 @@ plotly_plot <- plot_ly(
   )
 
 plotly_plot
-htmlwidgets::saveWidget(plotly_plot, "interactive_plot.html", selfcontained = TRUE)
+htmlwidgets::saveWidget(plotly_plot, "interactive_plot_noble.html", selfcontained = TRUE)
 ```
 
 # 6. Keyword Extraction and Community Labeling
@@ -697,15 +696,16 @@ netSummary$community_keywords <- community_keywords[
   as.character(netSummary$community)
 ]
 
+
 community_ratio_summary <- netSummary %>%
-+     group_by(community) %>%
-+     summarise(
-+         mean_ratio = mean(wdegree / degree, na.rm = TRUE),
-+         .groups = "drop"
-+     ) %>%
-+     arrange(desc(mean_ratio))
-> 
-> community_ratio_summary
+    group_by(community) %>%
+       summarise(
+         mean_ratio = mean(wdegree / degree, na.rm = TRUE),
+         .groups = "drop"
+     ) %>%
+     arrange(desc(mean_ratio))
+
+ community_ratio_summary
 ```
 
 # 7. Interactive Network Visualization
@@ -767,7 +767,7 @@ fn <- forceNetwork(
 fn
 
 # Save as HTML
-saveWidget(fn, "network.html", selfcontained = TRUE)
-browseURL("network.html")
+saveWidget(fn, "network_noble.html", selfcontained = TRUE)
+browseURL("network_noble.html")
 
 ```
