@@ -1,0 +1,76 @@
+---
+title: "nobleNet"
+output: html_document
+date: "2026-04-19"
+---
+```{r}
+if (!require("caret") | !require("cluster") | !require("plyr") | !require("ggplot2") | !require("ggfortify") | !require("jsonlite") | !require("mixtools") | !require("stringi") | !require("dplyr")) {
+  stop('Some required package(s) is not installed!')
+} else {
+  library("caret")      # 1. classification and regression Training.
+  
+  library("cluster")    # 2. "Finding Groups in Data": cluster analysis extended.
+  library("plyr")       # 3. plyr is a Tools for splitting, applying and combining data.
+  library("ggplot2")    # 4. ggplot2 is a plotting system for R, based on the grammar of graphics.
+  library("ggfortify")  # 5. Data visualization tools for statistical analysis results.
+  library("jsonlite")   # 6. jsonlite is a Robust, High Performance JSON Parser and Generator for R.
+  library("mixtools")   # 7. mixtools is a tool for analyzing Finite Mixture Models.
+  library("stringi")    # 8. string processing package for R.
+  library("dplyr")      # 9. dplyr is a grammar of data manipulation.
+  # -----> All are needed to do the analysis.
+}
+```
+
+```{r}
+options(scipen = 1)
+# -> We use the Nobel Prize API to fetch Nobel Laureates Data in JSON format.
+theData <- "http://api.nobelprize.org/v1/laureate.json"
+thePrize <- "http://api.nobelprize.org/v1/prize.json"
+theCountry <- "http://api.nobelprize.org/v1/country.json"
+
+get.data <- function() {
+  print("Hitting Nobel API...")
+  if (!"laureate.json" %in% dir("./gold/")) {
+    print("getting data for laureates, please wait...")
+    download.file(theData, destfile = "gold/laureate.json")
+  }
+  if (!"prize.json" %in% dir("./gold/")) {
+    print("getting data for prizes, please wait...")
+    download.file(thePrize, destfile = "gold/prize.json")
+  }
+  if (!"country.json" %in% dir("./gold/")) {
+    print("getting data for countries, please wait...")
+    download.file(theCountry, destfile = "gold/country.json")
+  }
+}
+# calling it.
+get.data()
+```
+
+
+```{r}
+# -> Assigning to a variable — 'nobels', 'nobelsPrize' and 'nobelsCountry', respectively.
+nobels <- fromJSON(theData)
+nobelsPrize <- fromJSON(thePrize)
+nobelsCountry <- fromJSON(theCountry)
+
+```
+
+```{r}
+library(dplyr)
+library(purrr)
+medicine_names <- nobels$laureates %>%
+  filter(map_lgl(prizes, ~ any(.x$category == "medicine"))) %>%
+  transmute(name = paste(firstname, surname))
+
+head(medicine_names)
+```
+
+```{r}
+for (aid in author_ids$x) {
+  cat("\nFetching papers for:", aid, "\n")
+  papers <- get_all_papers(aid)
+  all_papers <- append(all_papers, list(papers))
+}
+```
+
