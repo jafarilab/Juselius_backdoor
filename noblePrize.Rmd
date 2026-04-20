@@ -205,11 +205,27 @@ get_all_papers <- function(author_id){
 
 author_ids <- dplyr::pull(author_ids, x)
 all_papers <- list()
+
 for(aid in author_ids){
-  cat("\nFetching papers for:", aid, "\n")
-  papers <- get_all_papers(aid)
-  all_papers <- append(all_papers, papers)
+  aid <- author_ids[i]
+     
+     cat("\n[", i, "] Fetching papers for:", aid, "\n")
+     
+     papers <- tryCatch(
+         get_all_papers(aid),
+         error = function(e){
+             cat("Error at index", i, ":", aid, "\n")
+             return(NULL)
+         }
+     )
+     
+     if(!is.null(papers)){
+         all_papers <- c(all_papers, list(papers))
+    }
+     
+     Sys.sleep(1)  # safer for API
 }
+
 
 # -------------------------------
 # STEP 5: Extract coauthor IDs from each paper
